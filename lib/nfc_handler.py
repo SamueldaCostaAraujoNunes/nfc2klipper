@@ -67,9 +67,9 @@ class NfcHandler:
         
     def run(self):
         """Run the NFC handler, won't return"""
+        reader = nfc.Reader()
         while True:
             try:
-                reader = nfc.Reader()
                 reader.connect()
                 filament_id = self.getData(reader, 45)
                 spool_id = self.getData(reader, 46)
