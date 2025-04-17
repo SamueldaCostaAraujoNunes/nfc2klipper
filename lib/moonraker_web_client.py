@@ -18,7 +18,7 @@ class MoonrakerWebClient:
 
         commands = {f"script": "MMU_GATE_MAP NEXT_SPOOLID={spool}"}
 
-        response = requests.post(
+        response = requests.get(
             "http://192.168.0.125:7125/printer/gcode/script", timeout=10, json=commands
         )
         if response.status_code != 200:
