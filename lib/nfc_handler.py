@@ -59,7 +59,9 @@ class NfcHandler:
             data = reader.read_binary_blocks(block, 4)
             if data is not None:
                 hex_data = " ".join(f"{b:02X}" for b in data)
-                return int(hex_data.replace(" ", ""), 16)
+                result = int(hex_data.replace(" ", ""), 16)
+                print(f"Tag lida: block: {block}, filamento: {result}")
+                return result
             else:
                 return 0
         except Exception as e:
