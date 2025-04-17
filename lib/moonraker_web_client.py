@@ -21,5 +21,6 @@ class MoonrakerWebClient:
         response = requests.get(
             "http://192.168.0.125:7125/printer/gcode/script", timeout=10, json=commands
         )
+        print(response)
         if response.status_code != 200:
             raise ValueError(f"Request to moonraker failed: {response}")
