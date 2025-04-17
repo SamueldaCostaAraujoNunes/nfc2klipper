@@ -4,6 +4,7 @@
 """Moonraker Web Client"""
 
 import requests
+import json
 
 
 # pylint: disable=R0903
@@ -16,11 +17,16 @@ class MoonrakerWebClient:
     def set_spool_and_filament(self, spool: int, filament: int):
         """Calls moonraker with the current spool & filament"""
 
-        commands = {f"script": "MMU_GATE_MAP NEXT_SPOOLID={spool}"}
+ 
+        url = "http://192.168.0.125:7125/printer/gcode/script"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "script": f"MMU_GATE_MAP NEXT_SPOOLID={spool}"
+        }
 
-        response = requests.get(
-            "http://192.168.0.125:7125/printer/gcode/script", timeout=10, json=commands
-        )
+        response = requests.request("GET", url, headers=headers, data=json.dumps(payload))
         print(response)
         if response.status_code != 200:
             raise ValueError(f"Request to moonraker failed: {response}")
