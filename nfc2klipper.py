@@ -122,11 +122,11 @@ def should_clear_spool() -> bool:
 
 def on_nfc_tag_present(spool, filament):
     """Handles a read tag"""
-    print("Com tag")
+    print(f"Tag lida, spool: {spool}, filamento: {filament}")
 
-    if not should_clear_spool():
-        if not (spool and filament):
-            app.logger.info("Did not find spool and filament records in tag")
+    # if not should_clear_spool():
+    #     if not (spool and filament):
+    #         app.logger.info("Did not find spool and filament records in tag")
     if should_clear_spool() or (spool and filament):
         if not spool:
             spool = 0
@@ -136,7 +136,6 @@ def on_nfc_tag_present(spool, filament):
 
 
 def on_nfc_no_tag_present():
-    print("Sem tag")
     """Called when no tag is present (or tag without data)"""
     if should_clear_spool():
         set_spool_and_filament(0, 0)
