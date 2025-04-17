@@ -60,7 +60,7 @@ class NfcHandler:
             if data is not None:
                 hex_data = " ".join(f"{b:02X}" for b in data)
                 result = int(hex_data.replace(" ", ""), 16)
-                print(f"Tag lida: block: {block}, filamento: {result}")
+                print(f"Tag lida: block: {block}, conteudo: {result}")
                 return result
             else:
                 return 0
