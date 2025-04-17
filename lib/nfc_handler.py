@@ -73,8 +73,9 @@ class NfcHandler:
                 reader.connect()
                 filament_id = self.getData(reader, 45)
                 spool_id = self.getData(reader, 46)
-                self._read_from_tag(spool_id, filament_id)
-                time.sleep(0.2)
+                if self.on_nfc_tag_present:
+                    self.on_nfc_tag_present(spool_id, filament_id)
+                time.sleep(20)
             except Exception as e:
                 if self.on_nfc_no_tag_present:
                     self.on_nfc_no_tag_present()
@@ -117,8 +118,3 @@ class NfcHandler:
                 self.write_filament = None
             self.write_lock.release()
         return did_write
-
-    def _read_from_tag(self, spool, filament):
-        """Read data from tag and call callback"""
-        if self.on_nfc_tag_present:
-            self.on_nfc_tag_present(spool, filament)
