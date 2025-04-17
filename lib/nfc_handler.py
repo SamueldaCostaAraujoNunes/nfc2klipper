@@ -75,7 +75,7 @@ class NfcHandler:
                 spool_id = self.getData(reader, 46)
                 if self.on_nfc_tag_present:
                     self.on_nfc_tag_present(spool_id, filament_id)
-                time.sleep(20)
+                time.sleep(10)
             except Exception as e:
                 if self.on_nfc_no_tag_present:
                     self.on_nfc_no_tag_present()
