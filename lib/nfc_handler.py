@@ -8,8 +8,8 @@ import logging
 from threading import Lock, Event
 
 import ndef
-import nfc
-from nfc.clf import RemoteTarget
+from py122u import nfc
+import time
 
 
 SPOOL = "SPOOL"
@@ -42,50 +42,6 @@ class NfcHandler:
         """Sets a callback that will be called when a tag has been read"""
         self.on_nfc_tag_present = on_nfc_tag_present
 
-    @classmethod
-    def get_data_from_ndef_records(cls, records: ndef.TextRecord):
-        """Find wanted data from the NDEF records.
-
-        >>> import ndef
-        >>> record0 = ndef.TextRecord("")
-        >>> record1 = ndef.TextRecord("SPOOL:23\\n")
-        >>> record2 = ndef.TextRecord("FILAMENT:14\\n")
-        >>> record3 = ndef.TextRecord("SPOOL:23\\nFILAMENT:14\\n")
-        >>> NfcHandler.get_data_from_ndef_records([record0])
-        (None, None)
-        >>> NfcHandler.get_data_from_ndef_records([record3])
-        ('23', '14')
-        >>> NfcHandler.get_data_from_ndef_records([record1])
-        ('23', None)
-        >>> NfcHandler.get_data_from_ndef_records([record2])
-        (None, '14')
-        >>> NfcHandler.get_data_from_ndef_records([record0, record3])
-        ('23', '14')
-        >>> NfcHandler.get_data_from_ndef_records([record3, record0])
-        ('23', '14')
-        >>> NfcHandler.get_data_from_ndef_records([record1, record2])
-        ('23', '14')
-        >>> NfcHandler.get_data_from_ndef_records([record2, record1])
-        ('23', '14')
-        """
-
-        spool = None
-        filament = None
-
-        for record in records:
-            if record.type == NDEF_TEXT_TYPE:
-                for line in record.text.splitlines():
-                    line = line.split(":")
-                    if len(line) == 2:
-                        if line[0] == SPOOL:
-                            spool = line[1]
-                        if line[0] == FILAMENT:
-                            filament = line[1]
-            else:
-                logger.info("Read other record: %s", record)
-
-        return spool, filament
-
     def write_to_tag(self, spool: int, filament: int) -> bool:
         """Writes spool & filament info to tag. Returns true if worked."""
 
@@ -98,29 +54,31 @@ class NfcHandler:
 
         return False
 
+    def getData(self, reader, block):
+        try:
+            data = reader.read_binary_blocks(block, 4)
+            if data is not None:
+                hex_data = " ".join(f"{b:02X}" for b in data)
+                return int(hex_data.replace(" ", ""), 16)
+            else:
+                return 0
+        except Exception as e:
+            return 0
+        
     def run(self):
         """Run the NFC handler, won't return"""
-        # Open NFC reader. Will throw an exception if it fails.
-        with nfc.ContactlessFrontend(self.nfc_device) as clf:
-            while not self.should_stop_event.is_set():
-                tag = clf.connect(rdwr={"on-connect": lambda tag: False})
-                if tag:
-                    self._check_for_write_to_tag(tag)
-                    if tag.ndef is None:
-                        if self.on_nfc_no_tag_present:
-                            self.on_nfc_no_tag_present()
-                    else:
-                        self._read_from_tag(tag)
-
-                    # Wait for the tag to be removed.
-                    while clf.sense(
-                        RemoteTarget("106A"), RemoteTarget("106B"), RemoteTarget("212F")
-                    ):
-                        if self._check_for_write_to_tag(tag):
-                            self._read_from_tag(tag)
-                        time.sleep(0.2)
-                else:
-                    time.sleep(0.2)
+        while True:
+            try:
+                reader = nfc.Reader()
+                reader.connect()
+                filament_id = self.getData(reader, 45)
+                spool_id = self.getData(reader, 46)
+                self._read_from_tag(spool_id, filament_id)
+                time.sleep(0.2)
+            except Exception as e:
+                if self.on_nfc_no_tag_present:
+                    self.on_nfc_no_tag_present()
+                time.sleep(0.2)
 
     def stop(self):
         """Call to stop the handler"""
@@ -160,8 +118,7 @@ class NfcHandler:
             self.write_lock.release()
         return did_write
 
-    def _read_from_tag(self, tag):
+    def _read_from_tag(self, spool, filament):
         """Read data from tag and call callback"""
         if self.on_nfc_tag_present:
-            spool, filament = NfcHandler.get_data_from_ndef_records(tag.ndef.records)
             self.on_nfc_tag_present(spool, filament)
