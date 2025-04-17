@@ -16,15 +16,10 @@ class MoonrakerWebClient:
     def set_spool_and_filament(self, spool: int, filament: int):
         """Calls moonraker with the current spool & filament"""
 
-        commands = {
-            "commands": [
-                f"SET_ACTIVE_SPOOL ID={spool}",
-                f"SET_ACTIVE_FILAMENT ID={filament}",
-            ]
-        }
+        commands = {f"script": "MMU_GATE_MAP NEXT_SPOOLID={spool}"}
 
         response = requests.post(
-            self.url + "/api/printer/command", timeout=10, json=commands
+            "http://192.168.0.125:7125/printer/gcode/script", timeout=10, json=commands
         )
         if response.status_code != 200:
             raise ValueError(f"Request to moonraker failed: {response}")
